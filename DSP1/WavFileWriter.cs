@@ -11,7 +11,7 @@ namespace DSP1
         public void WriteFile(String filename, uint sampleRate, double[] data)
         {
             ushort channelsNumber = 1; // 1 for mono, 2 for stereo
-            ushort bitsPerSample = 8; // in bits
+            ushort bitsPerSample = 16; // in bits
 
             FileStream f = new FileStream(filename, FileMode.Create);
             BinaryWriter wr = new BinaryWriter(f);
@@ -71,7 +71,7 @@ namespace DSP1
 
         private byte[] GetBytes(double[] doubles)
         {
-            return doubles.SelectMany(value => BitConverter.GetBytes((uint) value)).ToArray();
+            return doubles.SelectMany(value => BitConverter.GetBytes((short) (value * short.MaxValue))).ToArray();
         }
     }
 }

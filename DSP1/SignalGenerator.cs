@@ -8,71 +8,116 @@ namespace DSP1
 {
     public class SignalGenerator
     {
-        public double[] GenerateSinusoid(int amplitude, int frequency, double initialPhaseRad, int sampling)
+        public double[] GenerateSinusoid(double amplitude, int frequency, double initialPhaseRad, int sampling, int duration, ModulationData modulationData)
         {
-            double[] result = new double[sampling];
-
-            for (int i = 1; i <= sampling; i++)
+            double[] result = new double[sampling *  duration];
+            double phaseMod = 0;
+            for (int i = 1; i <= sampling * duration; i++)
             {
-                double sin = Math.Sin(2 * Math.PI * frequency * (i / (double) sampling) + initialPhaseRad);
-                double x = amplitude * sin;
-                result[i - 1] = x;
+                double phase = 2 * Math.PI * frequency * (i / (double)sampling);
+                phaseMod += CalculateModPhase(frequency, i, sampling, modulationData);
+                phase += phaseMod;
+
+                double x = amplitude * Math.Sin(phase + initialPhaseRad);
+
+                result[i - 1] = modulationData.Type == ModulationType.AMPLITUDE
+                    ? modulationData.Data[i-1] * x
+                    : x;
             }
 
             return result;
         }
 
-        public double[] GeneratePulse(int amplitude, int frequency, double initialPhaseRad, int sampling, double fillFactor)
+        public double[] GeneratePulse(double amplitude, int frequency, double initialPhaseRad, int sampling, double fillFactor, int duration, ModulationData modulationData)
         {
-            double[] result = new double[sampling];
+            double[] result = new double[sampling * duration];
+            double phaseMod = 0;
 
-            for (int i = 1; i <= sampling; i++)
+            for (int i = 1; i <= sampling * duration; i++)
             {
-                result[i - 1] = (Math.PI * 2 * frequency * (i / (double) sampling) + initialPhaseRad) % (2 * Math.PI) / Math.PI * 2 < fillFactor
+                double phase = 2 * Math.PI * frequency * (i / (double)sampling);
+                phaseMod += CalculateModPhase(frequency, i, sampling, modulationData);
+                phase += phaseMod;
+
+                double x = (((phase + initialPhaseRad) % (2 * Math.PI)) / (2 * Math.PI)) < fillFactor
                     ? amplitude
                     : -amplitude;
+
+                result[i - 1] = modulationData.Type == ModulationType.AMPLITUDE
+                    ? modulationData.Data[i - 1] * x
+                    : x;
             }
 
             return result;
         }
 
-        public double[] GenerateTriangle(int amplitude, int frequency, double initialPhaseRad, int sampling)
+        public double[] GenerateTriangle(double amplitude, int frequency, double initialPhaseRad, int sampling, int duration, ModulationData modulationData)
         {
-            double[] result = new double[sampling];
+            double[] result = new double[sampling * duration];
+            double phaseMod = 0;
 
-            for (int i = 1; i <= sampling; i++)
+            for (int i = 1; i <= sampling * duration; i++)
             {
-                result[i - 1] = (2 * amplitude / Math.PI * Math.Pow(Math.Sin(Math.Sin(2 * Math.PI * frequency * (i / (double) sampling) + initialPhaseRad)), -1));
+                double phase = 2 * Math.PI * frequency * (i / (double)sampling);
+                phaseMod += CalculateModPhase(frequency, i, sampling, modulationData);
+                phase += phaseMod;
+
+                double x = amplitude * ((4 * Math.Abs(((((phase + initialPhaseRad) / (2 * Math.PI)) - 0.25) % 1) - 0.5)) - 1);
+
+                result[i - 1] = modulationData.Type == ModulationType.AMPLITUDE
+                    ? modulationData.Data[i - 1] * x
+                    : x;
             }
 
             return result;
         }
 
-        public double[] GenerateSawtooth(int amplitude, int frequency, double initialPhaseRad, int sampling)
+        public double[] GenerateSawtooth(double amplitude, int frequency, double initialPhaseRad, int sampling, int duration, ModulationData modulationData)
         {
-            double[] result = new double[sampling];
+            double[] result = new double[sampling * duration];
+            double phaseMod = 0;
 
-            for (int i = 1; i <= sampling; i++)
+            for (int i = 1; i <= sampling * duration; i++)
             {
-                double sin = Math.Sin(Math.PI * frequency * (i / (double)sampling) + initialPhaseRad);
-                double cos = Math.Cos(Math.PI * frequency * (i / (double)sampling) + initialPhaseRad);
-                result[i - 1] = (-2 * amplitude / Math.PI * Math.Pow(Math.Tan(cos / sin), -1));
+                double phase = 2 * Math.PI * frequency * (i / (double)sampling);
+                phaseMod += CalculateModPhase(frequency, i, sampling, modulationData);
+                phase += phaseMod;
+
+                double x = amplitude * (2 * ((((phase + initialPhaseRad) / (2 * Math.PI)) - 0.5) % 1) - 1);
+
+                result[i - 1] = modulationData.Type == ModulationType.AMPLITUDE
+                    ? modulationData.Data[i - 1] * x
+                    : x;
             }
 
             return result;
         }
 
-        public double[] GenerateWhiteNoise(int amplitude, int sampling)
+        public double[] GenerateWhiteNoise(double amplitude, int sampling, int duration, ModulationData modulationData)
         {
-            double[] result = new double[sampling];
+            double[] result = new double[sampling * duration];
             Random r = new Random();
 
-            for (int i = 1; i <= sampling; i++)
+            for (int i = 1; i <= sampling * duration; i++)
             {
-                result[i - 1] = amplitude * (2 * r.NextDouble() - 1);
+                double x = amplitude * (2 * r.NextDouble() - 1);
+
+                result[i - 1] = modulationData.Type == ModulationType.AMPLITUDE
+                    ? modulationData.Data[i - 1] * x
+                    : x;
             }
 
             return result;
+        }
+
+        private double CalculateModPhase(double frequency, int i, int sampling, ModulationData modulationData)
+        {
+            if (modulationData.Type == ModulationType.FREQUENCY)
+            {
+                return 2 * Math.PI * modulationData.Data[i - 1] / (double)sampling * frequency;
+            }
+
+            return 0;
         }
     }
 }
